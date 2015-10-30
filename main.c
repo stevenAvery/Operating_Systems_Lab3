@@ -12,24 +12,21 @@
 
 #define INPUT_FILE "puzzle.txt"
 
-extern int is_solved();
-
-typedef struct
-{
-    int row;
-    int column;
-} parameters;
-
 int main(void) {
-	load_field(INPUT_FILE);
+	// load the input file into the our 2d array
+	load_board(INPUT_FILE);
 
-	if (is_solved()) {
-		printf("file succesfully solved\n");
-		print_field();
-	} else {
-		printf("error solving file\n");
-	}
+	// if the board is not sovled
+	if (!is_solved())
+		solve(); // solve it
 
+	// if the board is solved
+	else
+		printf("the board was already sovled\n");
+
+	// output the solved board
+	printf("solution:\n");
+	print_board();
 
 	return 0;
 }
