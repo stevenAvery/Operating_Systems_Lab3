@@ -1,8 +1,8 @@
 CC = clang
-CFLAGS = -O -Wall -Wextra -std=c99 -w
+CFLAGS = -O -Wall -Wextra -lpthread -std=c99 -w
 LFLAGS =
 LIBS = -lm
-SOURCES = main.c
+SOURCES = main.c utility.c
 OBJECTS = $(subst .c,.o,$(SOURCES))
 EXE = a.out
 .PHONY: clean help
