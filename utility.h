@@ -9,15 +9,20 @@
 #ifndef UTILITY_H_
 #define UTILITY_H_
 
-int field[9][9];
+// our 9 by 9 sudoku board
+int board[9][9];
 
-extern void print_field(int field[9][9]);
-extern int** load_field(char *file_name);
+// board data management
+extern void print_board(void);
+extern void load_board(char *file_name);
 
-// the threads to check that the field is solved
+// to check that the board is solved
 extern void *row_check(void *arg);
 extern void *col_check(void *arg);
+extern void *square_check(void *arg);
+extern int is_solved(void);
 
-
+// solves the board
+extern void solve(void);
 
 #endif /* UTILITY_H_ */

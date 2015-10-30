@@ -12,30 +12,21 @@
 
 #define INPUT_FILE "puzzle.txt"
 
-extern void *row_check(void *arg);
-extern void *col_check(void *arg);
-
-
-typedef struct
-{
-    int row;
-    int column;
-} parameters;
-
 int main(void) {
-	int field = load_field(INPUT_FILE);
+	// load the input file into the our 2d array
+	load_board(INPUT_FILE);
 
-	pthread_t row_check_thread;
-	pthread_t col_check_thread;
+	// if the board is not sovled
+	if (!is_solved())
+		solve(); // solve it
 
-	pthread_create(&row_check_thread, 0, row_check, (void *)NULL);
-	pthread_create(&col_check_thread, 0, col_check, (void *)NULL);
+	// if the board is solved
+	else
+		printf("the board was already sovled\n");
 
-	pthread_join(row_check_thread, 0);
-	pthread_join(col_check_thread, 0);
-
-
-	print_field(field);
+	// output the solved board
+	printf("solution:\n");
+	print_board();
 
 	return 0;
 }
