@@ -12,9 +12,7 @@
 
 #define INPUT_FILE "puzzle.txt"
 
-extern void *row_check(void *arg);
-extern void *col_check(void *arg);
-
+extern int is_solved();
 
 typedef struct
 {
@@ -23,19 +21,15 @@ typedef struct
 } parameters;
 
 int main(void) {
-	int field = load_field(INPUT_FILE);
+	load_field(INPUT_FILE);
 
-	pthread_t row_check_thread;
-	pthread_t col_check_thread;
+	if (is_solved()) {
+		printf("file succesfully solved\n");
+		print_field();
+	} else {
+		printf("error solving file\n");
+	}
 
-	pthread_create(&row_check_thread, 0, row_check, (void *)NULL);
-	pthread_create(&col_check_thread, 0, col_check, (void *)NULL);
-
-	pthread_join(row_check_thread, 0);
-	pthread_join(col_check_thread, 0);
-
-
-	print_field(field);
 
 	return 0;
 }

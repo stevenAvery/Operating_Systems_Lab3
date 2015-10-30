@@ -11,13 +11,15 @@
 
 int field[9][9];
 
-extern void print_field(int field[9][9]);
-extern int** load_field(char *file_name);
+extern void print_field(void);
+extern void load_field(char *file_name);
 
 // the threads to check that the field is solved
 extern void *row_check(void *arg);
 extern void *col_check(void *arg);
+extern void *square_check(void *arg);
 
+extern int is_solved();
 
 
 #endif /* UTILITY_H_ */
