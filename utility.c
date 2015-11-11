@@ -98,12 +98,25 @@ int is_duplicate(int a[9]) {
 	return 0;
 }
 
+// checks if the array contains a zero
+// return 0 if it doesn't contain a zero
+// return 1 if it contains a zero
+int contains_zero(int a[9]) {
+	// TODO run check
+	for (int i = 0; i < 9; i++)
+		if (a[0] == 0)
+			return 1;
+
+	return 0;
+}
+
 // checks all of the rows of the board
 // return 1 if it is correct
 // return 0 if it is incorrect
 void *row_check(void *arg) {
 	printf("running row thread\n"); // TODO remove
 
+	// go through each row
 	for (int i = 0; i < 9; i++) {
 		int row[9] = {0};
 
@@ -114,8 +127,9 @@ void *row_check(void *arg) {
 			row[j] = board[i][j];
 		pthread_mutex_unlock(&board_lock);
 
-		if (is_duplicate(row))
-			return 0;
+		// that actual check
+		if (contains_zero(row) || is_duplicate(row))
+			return (void *)0;
 	}
 
 	return (void *)1;
@@ -127,6 +141,7 @@ void *row_check(void *arg) {
 void *col_check(void *arg) {
 	printf("running col thread\n"); // TODO remove
 
+	// go through each column
 	for (int j = 0; j < 9; j++) {
 		int col[9];
 
@@ -137,9 +152,9 @@ void *col_check(void *arg) {
 			col[i] = board[i][j];
 		pthread_mutex_unlock(&board_lock);
 
-
-		if (is_duplicate(col))
-			return 0;
+		// the actual check
+		if (contains_zero(col) || is_duplicate(col))
+			return (void *)0;
 	}
 
 	return (void *)1;
@@ -169,7 +184,6 @@ void get_square(int *ret_array, int square_num) {
 void *square_check(void *arg) {
 	printf("running square thread %d\n", (int)arg); // TODO remove
 
-	int ret = 1;
 	int square_num = (int)arg;
 
 	// lock the board before accessing it
@@ -178,8 +192,11 @@ void *square_check(void *arg) {
 	get_square(&square, square_num);
 	pthread_mutex_unlock(&board_lock);
 
-	ret = !is_duplicate(square);
-	return (void *)ret;
+	// the actual check
+	if (contains_zero(square) || is_duplicate(square))
+		return (void *)0;
+
+	return (void *)1;
 }
 
 // return 1 if sudoku board is correctly solved
