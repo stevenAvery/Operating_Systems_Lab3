@@ -104,7 +104,7 @@ int is_duplicate(int a[9]) {
 int contains_zero(int a[9]) {
 	// TODO run check
 	for (int i = 0; i < 9; i++)
-		if (a[0] == 0)
+		if (a[i] == 0)
 			return 1;
 
 	return 0;

@@ -25,6 +25,7 @@ int main(void) {
 		printf("the board was already sovled\n");
 
 	// output the solved board
+	printf("\n------------------------------------\n");
 	printf("solution:\n");
 	print_board();
 
