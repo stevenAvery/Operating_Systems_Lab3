@@ -17,7 +17,7 @@ extern void load_board(char *file_name);
 extern int is_duplicate(int a[9]);
 extern void *row_check(void *arg);
 extern void *col_check(void *arg);
-extern void *square_check(void *arg);
+//extern void *square_check(void *arg);
 extern int is_solved(void);
 
 // solves the board

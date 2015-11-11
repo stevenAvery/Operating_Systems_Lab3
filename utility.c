@@ -89,17 +89,11 @@ void load_board(char *file_name) {
 // return 0 if there are no duplicates
 // return 1 if there is at least one duplicate
 int is_duplicate(int a[9]) {
-	printf("is_duplicate ");
-	for (int x = 0; x < 9; x++)
-		printf("%d ", a[x]);
-	printf("\n");
-
 	for (int i = 0; i < 8; i++)
 		for (int j = i+1; j < 9; j++)
-			if (a[i] == a[j]) {
-				printf("is_duplicate failed: a[%d] = %d, a[%d] = %d\n", i, a[i], j, a[j]);
+			if (a[i] == a[j])
 				return 1;
-			}
+
 
 	return 0;
 }
@@ -158,25 +152,15 @@ void *col_check(void *arg) {
 //  3:(1,0)|4:(1,1)|5:(1,2)
 //  -------+-------+-------
 //  6:(2,0)|7:(2,1)|8:(2,2)
-int *get_square(int square_num) {
+void get_square(int *ret_array, int square_num) {
 	// translating square_num to x, y pos
 	int x = (int)(square_num/3);
 	int y = (int)(square_num%3);
-
-	// the array we'll save the results to and return
-	int ret_array[9] = {0};
 
 	// translate from board to ret_array
 	for(int i = 0; i < 3; ++i)
 		for(int j = 0; j < 3; ++j)
 			ret_array[i*3+j] = board[x*3+i][y*3+j];
-
-	printf("ret_array ");
-	for (int x = 0; x < 9; x++)
-		printf("%d ", ret_array[x]);
-	printf("\n");
-
-	return ret_array;
 }
 
 // checks that the 3by3 square (0 top left, 1 top-centre, etc)
@@ -190,14 +174,9 @@ void *square_check(void *arg) {
 
 	// lock the board before accessing it
 	pthread_mutex_lock(&board_lock);
-	int *square;
-	square = get_square(square_num);
+	int square[9];
+	get_square(&square, square_num);
 	pthread_mutex_unlock(&board_lock);
-
-	printf("square ");
-	for (int x = 0; x < 9; x++)
-		printf("%d ", square[x]);
-	printf("\n");
 
 	ret = !is_duplicate(square);
 	return (void *)ret;
