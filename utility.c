@@ -9,15 +9,30 @@
 
 #include "utility.h"
 #include <pthread.h>
+#include <stdio.h>
 
 #define RED "\x1b[0;31m"
 #define RESET "\x1b[0m"
+//#define FILE_NAME "puzzle.txt"
+#define FILE_NAME "solved_puzzle.txt"
+
+// our 9 by 9 sudoku board
+int board[9][9];
+pthread_mutex_t board_lock;
 
 // print the current board 2d array (9 by 9)
 void print_board(void) {
 	// go through every element of board array
 	for(int i = 0; i < 9; ++i) {
+		// print horizontal line before each third
+		if (i%3 == 0)
+			printf(RESET "+-------+-------+-------+\n");
+
 		for(int j = 0; j < 9; ++j) {
+			// print bar at the start of a new line
+			if (j == 0)
+				printf(RESET "| ");
+
 			// use escape sequences to output '0' in red
 			if(board[i][j] == 0)
 				printf(RED);
@@ -26,44 +41,114 @@ void print_board(void) {
 
 			// output the element
 			printf("%d ", board[i][j]);
+
+			// print bar after every third
+			if (j%3 == 2)
+				printf(RESET "| ");
 		}
 		printf("\n");
 	}
 
 	// escape sequence to reset terminal color
 	printf(RESET);
+
+	// final horizontal line
+	printf("+-------+-------+-------+\n");
 }
 
 // loads in the input file from filename, and saves it to the board 2d array
 void load_board(char *file_name) {
-	// TODO
+	const int MAX_LINE = 19; // 9 numbers, 9 spaces, and \n
+	static char line[MAX_LINE] = "";
+	char *token_str;
 
-	// currently inits to random number
-	for(int i = 0; i < 9; ++i)
-		for(int j = 0; j < 9; ++j)
-			board[i][j] = rand() % 9;
+	// open the file
+	FILE *f = fopen(FILE_NAME, "r");
+	if(f == NULL) {
+		fprintf(stderr, "unable to open file for reading");
+		return;
+	}
+
+	// read in each line
+	for (int i = 0; fgets(line, MAX_LINE, f) != NULL && i < 9; i++) {
+		// the tokenizer must init with line, and after that it will take NULL
+		if ((token_str = strtok(line, " ")) != NULL)
+			board[i][0] = atoi(token_str);
+
+		// go through each of the remaining elements in the row
+		for (int j = 1; j < 9; j++)
+			if ((token_str = strtok(NULL, " ")) != NULL)
+				board[i][j] = atoi(token_str);
+	}
+
+	// close the file
+	fclose(f);
+}
+
+// checks if there are any duplicates in the input array of 9 elements
+// return 0 if there are no duplicates
+// return 1 if there is at least one duplicate
+int is_duplicate(int a[9]) {
+	printf("is_duplicate ");
+	for (int x = 0; x < 9; x++)
+		printf("%d ", a[x]);
+	printf("\n");
+
+	for (int i = 0; i < 8; i++)
+		for (int j = i+1; j < 9; j++)
+			if (a[i] == a[j]) {
+				printf("is_duplicate failed: a[%d] = %d, a[%d] = %d\n", i, a[i], j, a[j]);
+				return 1;
+			}
+
+	return 0;
 }
 
 // checks all of the rows of the board
 // return 1 if it is correct
 // return 0 if it is incorrect
 void *row_check(void *arg) {
-	printf("running row thread\n");
+	printf("running row thread\n"); // TODO remove
 
-	// TODO
-	int ret = 1;
-	return (void *)ret;
+	for (int i = 0; i < 9; i++) {
+		int row[9] = {0};
+
+		// lock the board before accessing it
+		pthread_mutex_lock(&board_lock);
+		// copy the column into a spearate array
+		for (int j = 0; j < 9; j++)
+			row[j] = board[i][j];
+		pthread_mutex_unlock(&board_lock);
+
+		if (is_duplicate(row))
+			return 0;
+	}
+
+	return (void *)1;
 }
 
 // checks all of the cols of the board
 // return 1 if it is correct
 // return 0 if it is incorrect
 void *col_check(void *arg) {
-	printf("running col thread\n");
+	printf("running col thread\n"); // TODO remove
 
-	// TODO
-	int ret = 1;
-	return (void *)ret;
+	for (int j = 0; j < 9; j++) {
+		int col[9];
+
+		// lock the board before accessing it
+		pthread_mutex_lock(&board_lock);
+		// copy the column into a spearate array
+		for (int i = 0; i < 9; i++)
+			col[i] = board[i][j];
+		pthread_mutex_unlock(&board_lock);
+
+
+		if (is_duplicate(col))
+			return 0;
+	}
+
+	return (void *)1;
 }
 
 // for square_check
@@ -86,18 +171,35 @@ int *get_square(int square_num) {
 		for(int j = 0; j < 3; ++j)
 			ret_array[i*3+j] = board[x*3+i][y*3+j];
 
+	printf("ret_array ");
+	for (int x = 0; x < 9; x++)
+		printf("%d ", ret_array[x]);
+	printf("\n");
+
 	return ret_array;
 }
+
 // checks that the 3by3 square (0 top left, 1 top-centre, etc)
 // return 1 if it is correct
 // return 0 if it is incorrect
 void *square_check(void *arg) {
-	printf("running square thread %d\n", (int)arg);
+	printf("running square thread %d\n", (int)arg); // TODO remove
 
-	// TODO
 	int ret = 1;
 	int square_num = (int)arg;
-	int *square = get_square(square_num);
+
+	// lock the board before accessing it
+	pthread_mutex_lock(&board_lock);
+	int *square;
+	square = get_square(square_num);
+	pthread_mutex_unlock(&board_lock);
+
+	printf("square ");
+	for (int x = 0; x < 9; x++)
+		printf("%d ", square[x]);
+	printf("\n");
+
+	ret = !is_duplicate(square);
 	return (void *)ret;
 }
 
@@ -113,8 +215,8 @@ int is_solved(void) {
 	pthread_t square_pth[9];
 
 	// create check threads (1 for rows, 1 for cols, 9 for 3by3 squares)
-	pthread_create(&row_pth, 0, row_check, (void *)9);
-	pthread_create(&col_pth, 0, col_check, (void *)10);
+	pthread_create(&row_pth, 0, row_check, (void *)NULL);
+	pthread_create(&col_pth, 0, col_check, (void *)NULL);
 	for (int i = 0; i < 9; ++i)
 		pthread_create(&square_pth[i], 0, square_check, (void *)i);
 
@@ -142,4 +244,5 @@ int is_solved(void) {
 // solves the sudoku board 2d array
 void solve (void) {
 	// TODO
+	printf("solving\n"); // TODO remove
 }
