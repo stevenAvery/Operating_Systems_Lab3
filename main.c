@@ -15,6 +15,8 @@
 int main(void) {
 	// load the input file into the our 2d array
 	load_board(INPUT_FILE);
+	printf("input:\n");
+	print_board();
 
 	// if the board is not sovled
 	if (!is_solved())
@@ -25,8 +27,8 @@ int main(void) {
 		printf("the board was already sovled\n");
 
 	// output the solved board
-	printf("\n------------------------------------\n");
-	printf("solution:\n");
+	// printf("\n------------------------------------\n"); // DEBUG
+	printf("\nsolution:\n");
 	print_board();
 
 	return 0;
