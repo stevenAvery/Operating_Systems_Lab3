@@ -6,15 +6,17 @@
  *
  */
 
+// TODO delete DEBUG lines
+// TODO expand solve(), to be able to solve "unsafe" puzzles
 
 #include "utility.h"
 #include <pthread.h>
 #include <stdio.h>
 
-#define RED "\x1b[0;31m"
+#define RED "\x1b[0;31m" // 41m for background
 #define RESET "\x1b[0m"
-//#define FILE_NAME "puzzle.txt"
-#define FILE_NAME "solved_puzzle.txt"
+#define FILE_NAME "puzzle.txt"
+//#define FILE_NAME "solved_puzzle.txt"
 
 // our 9 by 9 sudoku board
 int board[9][9];
@@ -88,12 +90,11 @@ void load_board(char *file_name) {
 // checks if there are any duplicates in the input array of 9 elements
 // return 0 if there are no duplicates
 // return 1 if there is at least one duplicate
-int is_duplicate(int a[9]) {
+int contains_duplicate(int a[9]) {
 	for (int i = 0; i < 8; i++)
 		for (int j = i+1; j < 9; j++)
 			if (a[i] == a[j])
 				return 1;
-
 
 	return 0;
 }
@@ -102,7 +103,6 @@ int is_duplicate(int a[9]) {
 // return 0 if it doesn't contain a zero
 // return 1 if it contains a zero
 int contains_zero(int a[9]) {
-	// TODO run check
 	for (int i = 0; i < 9; i++)
 		if (a[i] == 0)
 			return 1;
@@ -110,58 +110,8 @@ int contains_zero(int a[9]) {
 	return 0;
 }
 
-// checks all of the rows of the board
-// return 1 if it is correct
-// return 0 if it is incorrect
-void *row_check(void *arg) {
-	printf("running row thread\n"); // TODO remove
-
-	// go through each row
-	for (int i = 0; i < 9; i++) {
-		int row[9] = {0};
-
-		// lock the board before accessing it
-		pthread_mutex_lock(&board_lock);
-		// copy the column into a spearate array
-		for (int j = 0; j < 9; j++)
-			row[j] = board[i][j];
-		pthread_mutex_unlock(&board_lock);
-
-		// that actual check
-		if (contains_zero(row) || is_duplicate(row))
-			return (void *)0;
-	}
-
-	return (void *)1;
-}
-
-// checks all of the cols of the board
-// return 1 if it is correct
-// return 0 if it is incorrect
-void *col_check(void *arg) {
-	printf("running col thread\n"); // TODO remove
-
-	// go through each column
-	for (int j = 0; j < 9; j++) {
-		int col[9];
-
-		// lock the board before accessing it
-		pthread_mutex_lock(&board_lock);
-		// copy the column into a spearate array
-		for (int i = 0; i < 9; i++)
-			col[i] = board[i][j];
-		pthread_mutex_unlock(&board_lock);
-
-		// the actual check
-		if (contains_zero(col) || is_duplicate(col))
-			return (void *)0;
-	}
-
-	return (void *)1;
-}
-
 // for square_check
-// returns a 1d array listing the contents of the 3by3 square
+// puts a 1d array listing the contents of the 3by3 square in ret_array
 //  0:(0,0)|1:(0,1)|2:(0,2)		// legend
 //  -------+-------+-------		// wirtten as 'square_num:(x, y)'
 //  3:(1,0)|4:(1,1)|5:(1,2)
@@ -178,12 +128,71 @@ void get_square(int *ret_array, int square_num) {
 			ret_array[i*3+j] = board[x*3+i][y*3+j];
 }
 
+// puts a 1d array listing the contents of row i
+void get_row(int *ret_array, int i) {
+	for (int j = 0; j < 9; j++)
+		ret_array[j] = board[i][j];
+}
+
+// puts a 1d array listing the contents of column j
+void get_col(int *ret_array, int j) {
+	for (int i = 0; i < 9; i++)
+		ret_array[i] = board[i][j];
+}
+
+// checks all of the rows of the board
+// return 1 if it is correct
+// return 0 if it is incorrect
+void *row_check(void *arg) {
+	 // printf("running row thread\n"); // DEBUG
+
+	// go through each row
+	for (int i = 0; i < 9; i++) {
+		int row[9] = {0};
+
+		// lock the board before accessing it
+		pthread_mutex_lock(&board_lock);
+		// copy the column into a spearate array
+		get_row(&row, i);
+		pthread_mutex_unlock(&board_lock);
+
+		// that actual check
+		if (contains_zero(row) || contains_duplicate(row))
+			return (void *)0;
+	}
+
+	return (void *)1;
+}
+
+// checks all of the cols of the board
+// return 1 if it is correct
+// return 0 if it is incorrect
+void *col_check(void *arg) {
+	 // printf("running col thread\n"); // DEBUG
+
+	// go through each column
+	for (int j = 0; j < 9; j++) {
+		int col[9];
+
+		// lock the board before accessing it
+		pthread_mutex_lock(&board_lock);
+		// copy the column into a spearate array
+		get_col(&col, j);
+		pthread_mutex_unlock(&board_lock);
+
+		// the actual check
+		if (contains_zero(col) || contains_duplicate(col))
+			return (void *)0;
+	}
+
+	return (void *)1;
+}
+
 // checks that the 3by3 square (0 top left, 1 top-centre, etc)
 // return 1 if it is correct
 // return 0 if it is incorrect
 void *square_check(void *arg) {
-	printf("running square thread %d\n", (int)arg); // TODO remove
-
+	// printf("running square thread %d\n", (int)arg); // DEBUG
 	int square_num = (int)arg;
 
 	// lock the board before accessing it
@@ -193,7 +202,7 @@ void *square_check(void *arg) {
 	pthread_mutex_unlock(&board_lock);
 
 	// the actual check
-	if (contains_zero(square) || is_duplicate(square))
+	if (contains_zero(square) || contains_duplicate(square))
 		return (void *)0;
 
 	return (void *)1;
@@ -236,9 +245,76 @@ int is_solved(void) {
 	return ret;
 }
 
+int element_count(int a[9], int start, int end) {
+	int count = 0;
+	for (int i = start; i < end; i++)
+		if (a[i] != 0)
+			count++;
+
+	return count;
+}
+
+// sets a cell if it can safely be set
+// returns 1 if the cell was set
+// returns 0 if no cell was set
+int check_and_set_cell(int i, int j) {
+	int col[9] = {0};
+	int row[9] = {0};
+	int square[9] = {0};
+	int is_taken[10] = {0}; // bool array of unavailable numbers to our current cell
+
+	// create a list of numbers that intersect our cell (same row, col, or square)
+	get_row(&row, i);
+	get_col(&col, j);
+	int square_num = (i/3)*3 + (j/3);
+	get_square(&square, square_num);
+
+	for (int x = 0; x < 9; x++) {
+		is_taken[col[x]] = 1;
+		is_taken[row[x]] = 1;
+		is_taken[square[x]] = 1;
+	}
+
+	// the cell can be solved
+	if (element_count(is_taken, 1, 10) == 8) {
+		// get the number
+		for (int x = 1; x < 10; x++) {
+			if (is_taken[x] == 0) {
+				board[i][j] = x;
+				return 1;
+			}
+		}
+	}
+
+	return 0;
+}
+
+// solves all cells that it can without having to guess
+void solve_safe() {
+	int change_count;
+	do {
+		//print_board();
+		change_count = 0;
+		// go through each cell of the board
+		for (int i = 0; i < 9; i++) {
+			for (int j = 0; j < 9; j++) {
+				// only try to solved unsolved cells
+				if (board[i][j] == 0) {
+					change_count += check_and_set_cell(i, j);
+				}
+			}
+		}
+		// printf("change_count = %d \n", change_count); // DEBUG
+	} while (change_count > 0);
+}
 
 // solves the sudoku board 2d array
 void solve (void) {
-	// TODO
-	printf("solving\n"); // TODO remove
+	// printf("solving\n"); // DEBUG
+
+	// find guaranteed - has 8 numbers (other than 0) in the same row, column, or square
+	solve_safe();
+
+	// printf("is_solved = %d\n", is_solved()); // DEBUG
+
 }
