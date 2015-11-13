@@ -6,23 +6,18 @@
  *
  */
 
-// TODO delete DEBUG lines
-// TODO expand solve(), to be able to solve "unsafe" puzzles
-
 #include "utility.h"
 #include <pthread.h>
 #include <stdio.h>
 
 #define RED "\x1b[0;31m" // 41m for background
 #define RESET "\x1b[0m"
-#define FILE_NAME "puzzle.txt"
-//#define FILE_NAME "solved_puzzle.txt"
 
 // our 9 by 9 sudoku board
 int board[9][9];
 pthread_mutex_t board_lock;
 
-// print the current board 2d array (9 by 9)
+// print the current board 2d array (9 by 9) to the console
 void print_board(void) {
 	// go through every element of board array
 	for(int i = 0; i < 9; ++i) {
@@ -65,7 +60,7 @@ void load_board(char *file_name) {
 	char *token_str;
 
 	// open the file
-	FILE *f = fopen(FILE_NAME, "r");
+	FILE *f = fopen(file_name, "r");
 	if(f == NULL) {
 		fprintf(stderr, "unable to open file for reading");
 		return;
@@ -81,6 +76,29 @@ void load_board(char *file_name) {
 		for (int j = 1; j < 9; j++)
 			if ((token_str = strtok(NULL, " ")) != NULL)
 				board[i][j] = atoi(token_str);
+	}
+
+	// close the file
+	fclose(f);
+}
+
+// saves the board array to output filename
+void save_board(char * file_name) {
+	const int MAX_LINE = 19; // 9 numbers, 9 spaces, and \n
+	static char line[MAX_LINE] = "";
+
+	// open the file
+	FILE *f = fopen(file_name, "w");
+	if(f == NULL) {
+		fprintf(stderr, "unable to open file for reading");
+		return;
+	}
+
+	for (int i = 0; i < 9; i++) {
+		for (int j = 0; j < 9; j++) {
+			fprintf(f, "%d ", board[i][j]);
+		}
+		fprintf(f, "\n");
 	}
 
 	// close the file
@@ -144,8 +162,6 @@ void get_col(int *ret_array, int j) {
 // return 1 if it is correct
 // return 0 if it is incorrect
 void *row_check(void *arg) {
-	 // printf("running row thread\n"); // DEBUG
-
 	// go through each row
 	for (int i = 0; i < 9; i++) {
 		int row[9] = {0};
@@ -168,8 +184,6 @@ void *row_check(void *arg) {
 // return 1 if it is correct
 // return 0 if it is incorrect
 void *col_check(void *arg) {
-	 // printf("running col thread\n"); // DEBUG
-
 	// go through each column
 	for (int j = 0; j < 9; j++) {
 		int col[9];
@@ -192,7 +206,6 @@ void *col_check(void *arg) {
 // return 1 if it is correct
 // return 0 if it is incorrect
 void *square_check(void *arg) {
-	// printf("running square thread %d\n", (int)arg); // DEBUG
 	int square_num = (int)arg;
 
 	// lock the board before accessing it
@@ -208,6 +221,7 @@ void *square_check(void *arg) {
 	return (void *)1;
 }
 
+// determines if the board 2d array is a solved sudoku puzzle
 // return 1 if sudoku board is correctly solved
 // return 0 if it is not correctly solved
 int is_solved(void) {
@@ -245,6 +259,8 @@ int is_solved(void) {
 	return ret;
 }
 
+// counts the number of non-zero elements in array a
+// returns the total count
 int element_count(int a[9], int start, int end) {
 	int count = 0;
 	for (int i = start; i < end; i++)
@@ -289,12 +305,14 @@ int check_and_set_cell(int i, int j) {
 	return 0;
 }
 
-// solves all cells that it can without having to guess
-void solve_safe() {
+// solves the sudoku board 2d array
+// solves 'safe' puzzles, that is puzzles that never require guessing
+void solve (void) {
 	int change_count;
 	do {
-		//print_board();
+		// keep track if any changes are made
 		change_count = 0;
+
 		// go through each cell of the board
 		for (int i = 0; i < 9; i++) {
 			for (int j = 0; j < 9; j++) {
@@ -304,17 +322,5 @@ void solve_safe() {
 				}
 			}
 		}
-		// printf("change_count = %d \n", change_count); // DEBUG
 	} while (change_count > 0);
-}
-
-// solves the sudoku board 2d array
-void solve (void) {
-	// printf("solving\n"); // DEBUG
-
-	// find guaranteed - has 8 numbers (other than 0) in the same row, column, or square
-	solve_safe();
-
-	// printf("is_solved = %d\n", is_solved()); // DEBUG
-
 }

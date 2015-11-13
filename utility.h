@@ -12,12 +12,9 @@
 // board data management
 extern void print_board(void);
 extern void load_board(char *file_name);
+extern void save_board(char * file_name);
 
 // to check that the board is solved
-extern int contains_duplicate(int a[9]);
-extern void *row_check(void *arg);
-extern void *col_check(void *arg);
-//extern void *square_check(void *arg);
 extern int is_solved(void);
 
 // solves the board
