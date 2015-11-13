@@ -11,6 +11,7 @@
 #include <pthread.h>
 
 #define INPUT_FILE "puzzle.txt"
+#define OUTPUT_FILE "solution.txt"
 
 int main(void) {
 	// load the input file into the our 2d array
@@ -27,9 +28,11 @@ int main(void) {
 		printf("the board was already sovled\n");
 
 	// output the solved board
-	// printf("\n------------------------------------\n"); // DEBUG
 	printf("\nsolution:\n");
 	print_board();
+
+	// save the solved board
+	save_board(OUTPUT_FILE);
 
 	return 0;
 }
